@@ -274,11 +274,16 @@ export class I18nService<T = I18nRegisteredTranslations>
       }
     };
 
-    const fallbacks = this.options.fallbacks ?? {};
+    // Locales compare case-insensitively, as `lookup` does: a `fallbacks` entry
+    // applies to a catalog spelled `de-at`, and may point to one spelled `pt-br`.
+    const fallbacks = new Map(
+      Object.entries(this.options.fallbacks ?? {}).map(([from, to]) => [from.toLowerCase(), to]),
+    );
     let current: string | undefined = locale;
     while (current && !chain.includes(current)) {
       push(current);
-      current = Object.hasOwn(fallbacks, current) ? fallbacks[current] : undefined;
+      const next = fallbacks.get(current.toLowerCase());
+      current = next && (lookup.get(next.toLowerCase()) ?? next);
     }
 
     for (const l of chain.slice()) {
